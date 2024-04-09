@@ -6,6 +6,7 @@ import pandas as pd
 from sklearn.preprocessing import MinMaxScaler
 from keras.models import load_model, Sequential
 from keras.layers import Dense, LSTM, Dropout
+from keras.initializers import Orthogonal
 import joblib
 import matplotlib.pyplot as plt
 
@@ -45,20 +46,20 @@ def train_model():
     X_train = np.reshape(X_train, (X_train.shape[0], X_train.shape[1], 1))
 
     model = Sequential()
-    model.add(LSTM(units=100, return_sequences=True, input_shape=(X_train.shape[1], 1)))
+    model.add(LSTM(units=100, return_sequences=True, input_shape=(X_train.shape[1], 1), kernel_initializer=Orthogonal()))
     model.add(Dropout(0.2))
-    model.add(LSTM(units=100, return_sequences=True))
+    model.add(LSTM(units=100, return_sequences=True, kernel_initializer=Orthogonal()))
     model.add(Dropout(0.2))
-    model.add(LSTM(units=100, return_sequences=True))
+    model.add(LSTM(units=100, return_sequences=True, kernel_initializer=Orthogonal()))
     model.add(Dropout(0.2))
-    model.add(LSTM(units=100, return_sequences=False))
+    model.add(LSTM(units=100, return_sequences=False, kernel_initializer=Orthogonal()))
     model.add(Dropout(0.2))
-    model.add(Dense(units=1))
+    model.add(Dense(units=1, kernel_initializer=Orthogonal()))
 
     optimizer = 'adam'
     model.compile(optimizer=optimizer, loss="mean_squared_error")
 
-    hist = model.fit(X_train, y_train, epochs=10, batch_size=32, verbose=2)
+    hist = model.fit(X_train, y_train, epochs=50, batch_size=32, verbose=2)
 
     # Plotting the training loss
     plt.figure(figsize=(8, 5))
@@ -85,6 +86,20 @@ def predict_stock_price(model, sc, input_data):
 
     return input_data[60:, 0], predicted_price.flatten()
 
+def save_test_results(actual_prices, predicted_prices):
+    test_results = {"actual_prices": actual_prices, "predicted_prices": predicted_prices}
+    joblib.dump(test_results, "test_results.pkl")
+
+def load_test_results():
+    test_results_file = "test_results.pkl"
+    if os.path.isfile(test_results_file):
+        test_results = joblib.load(test_results_file)
+        actual_prices = test_results["actual_prices"]
+        predicted_prices = test_results["predicted_prices"]
+        return actual_prices, predicted_prices
+    else:
+        return None, None
+
 def main():
     st.title("Stock Price Prediction App")
 
@@ -100,6 +115,9 @@ def main():
     # Predict stock prices
     input_closing = test_data.iloc[:, 0:].values
     actual_prices, predicted_prices = predict_stock_price(model, sc, input_closing)
+
+    # Save the test results
+    save_test_results(actual_prices, predicted_prices)
 
     # Plotting actual vs predicted graph
     plt.figure(figsize=(10, 6))
