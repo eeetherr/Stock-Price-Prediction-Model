@@ -58,7 +58,7 @@ def train_model():
     optimizer = 'adam'
     model.compile(optimizer=optimizer, loss="mean_squared_error")
 
-    hist = model.fit(X_train, y_train, epochs=50, batch_size=32, verbose=2)
+    hist = model.fit(X_train, y_train, epochs=10, batch_size=32, verbose=2)
 
     # Plotting the training loss
     plt.figure(figsize=(8, 5))
